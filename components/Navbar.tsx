@@ -50,11 +50,7 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
     isGold: true
   })
 
-  navLinks.push({
-    href: '/career-compass-ai',
-    label: 'Career Compass AI',
-    isGold: true
-  })
+
 
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.startsWith('/')) {

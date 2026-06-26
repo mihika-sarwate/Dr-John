@@ -117,8 +117,8 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
                 onClick={(e) => handleAnchorClick(e, link.href)}
                 className="text-[11px] lg:text-sm font-semibold underline decoration-1 underline-offset-2 hover:opacity-80 transition-opacity cursor-pointer whitespace-nowrap"
                 style={{
-                  color: link.isGold ? '#e60000' : 'inherit',
-                  fontWeight: link.isGold ? 700 : 'inherit'
+                  color: 'inherit',
+                  fontWeight: 700
                 }}
               >
                 {link.label}
@@ -166,8 +166,8 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
                 onClick={(e) => handleAnchorClick(e, link.href)}
                 className="block px-3 py-2 text-base font-semibold underline decoration-1 underline-offset-2 hover:opacity-80 transition-opacity cursor-pointer"
                 style={{
-                  color: link.isGold ? '#e60000' : 'inherit',
-                  fontWeight: link.isGold ? 700 : 'inherit'
+                  color: 'inherit',
+                  fontWeight: 700
                 }}
               >
                 {link.label}

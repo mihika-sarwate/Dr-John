@@ -53,20 +53,32 @@ const ptComponents: any = {
 
       if (/The student.*must study.*understand/i.test(text)) {
         return (
-          <p>
-            <strong>The student </strong>
-            must study{' '}
-            <a
-              href="https://oversimplify.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-              style={{ color: '#2563EB' }}
-            >
-              https://oversimplify.in
-            </a>{' '}
-            to understand &#39;Lifelong Learning&#39;
-          </p>
+          <div className="space-y-2">
+            <p>
+              <strong>The student </strong>
+              must study{' '}
+              <a
+                href="https://oversimplify.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+                style={{ color: '#2563EB' }}
+              >
+                https://oversimplify.in
+              </a>{' '}
+              to understand &#39;Lifelong Learning&#39;
+            </p>
+            <p className="mt-2 text-center">
+              <strong>Career Compass AI: </strong>
+              <a
+                href="/career-compass-ai"
+                className="underline"
+                style={{ color: '#2563EB' }}
+              >
+                https://oversimplify.in/career-compass-ai
+              </a>
+            </p>
+          </div>
         )
       }
 

@@ -1,5 +1,5 @@
 'use client'
-// Trigger build comment
+// Force rerun deployment
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 

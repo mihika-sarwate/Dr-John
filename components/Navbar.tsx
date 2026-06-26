@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 
 type NavigationItem = {
   label?: string
@@ -23,6 +24,8 @@ type NavigationData = {
 }
 
 export default function Navbar({ navigation: initialNavigation }: { navigation?: NavigationData | null }) {
+  const pathname = usePathname()
+  
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [navigation, setNavigation] = useState<NavigationData | null | undefined>(initialNavigation)
 
@@ -30,15 +33,28 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
     setNavigation(initialNavigation)
   }, [initialNavigation])
 
+  if (pathname === '/tna') return null
+
   const navLinks = (navigation?.menuItems || [])
     .filter((item) => item.isVisible !== false)
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((item) => ({
       href: item.sectionId ? `#${item.sectionId}` : '#',
-      label: item.label || ''
+      label: item.label || '',
+      isGold: false
     }))
 
+  navLinks.push({
+    href: '/tna',
+    label: 'AI Based Training Need Analysis',
+    isGold: true
+  })
+
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('/')) {
+      setMobileMenuOpen(false)
+      return
+    }
     e.preventDefault()
     setMobileMenuOpen(false)
 
@@ -100,7 +116,10 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
                 href={link.href}
                 onClick={(e) => handleAnchorClick(e, link.href)}
                 className="text-4 font-semibold underline decoration-1 underline-offset-2 hover:opacity-80 transition-opacity cursor-pointer whitespace-nowrap"
-                style={{ color: 'inherit' }}
+                style={{
+                  color: link.isGold ? '#D4A24E' : 'inherit',
+                  fontWeight: link.isGold ? 700 : 'inherit'
+                }}
               >
                 {link.label}
               </a>
@@ -146,7 +165,10 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
                 href={link.href}
                 onClick={(e) => handleAnchorClick(e, link.href)}
                 className="block px-3 py-2 text-base font-semibold underline decoration-1 underline-offset-2 hover:opacity-80 transition-opacity cursor-pointer"
-                style={{ color: 'inherit' }}
+                style={{
+                  color: link.isGold ? '#D4A24E' : 'inherit',
+                  fontWeight: link.isGold ? 700 : 'inherit'
+                }}
               >
                 {link.label}
               </a>

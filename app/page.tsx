@@ -117,6 +117,63 @@ export default async function Home() {
 
       {/* Contact Section */}
       {contactSection && <ContactSection section={contactSection} />}
+
+      {/* CareerCompass™ AI Assessment Module CTA */}
+      <section style={{
+        background: "#0D1025",
+        padding: "48px 24px",
+        textAlign: "center",
+        borderTop: "1px solid #2D3478"
+      }}>
+        <p style={{
+          color: "#D4A24E",
+          fontSize: "12px",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "2px",
+          marginBottom: "12px"
+        }}>
+          NEW — Powered by Claude AI (Anthropic)
+        </p>
+        <h2 style={{
+          color: "#FFFFFF",
+          fontSize: "28px",
+          fontWeight: 800,
+          marginBottom: "16px",
+          lineHeight: 1.3
+        }}>
+          Discover Your Ideal Career with AI
+        </h2>
+        <p style={{
+          color: "#8A8FAF",
+          fontSize: "15px",
+          maxWidth: "520px",
+          margin: "0 auto 28px",
+          lineHeight: 1.6
+        }}>
+          Take our comprehensive 261-question psychometric assessment — covering IQ, EQ, MBTI, RIASEC, Big Five, Grit, Ethics and more — and receive your personalised AI-generated career report instantly.
+        </p>
+        <a href="/tna" style={{
+          display: "inline-block",
+          background: "#D4A24E",
+          color: "#0D1025",
+          fontWeight: 800,
+          fontSize: "17px",
+          padding: "16px 40px",
+          borderRadius: "12px",
+          textDecoration: "none",
+          letterSpacing: "0.3px"
+        }}>
+          🧭 AI Based Training Need Analysis
+        </a>
+        <p style={{
+          color: "#5A5F7F",
+          fontSize: "11px",
+          marginTop: "16px"
+        }}>
+          Free to use · Results in 60 minutes · 100% private · No data stored
+        </p>
+      </section>
     </>
   )
 }

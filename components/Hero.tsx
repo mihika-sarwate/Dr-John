@@ -69,7 +69,7 @@ const ptComponents: any = {
               to understand &#39;Lifelong Learning&#39;
             </p>
             <p className="mt-2 text-center">
-              <strong>Career Compass AI: </strong>
+              <strong>Ai based training need analysis: </strong>
               <a
                 href="/career-compass-ai"
                 className="underline"

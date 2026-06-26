@@ -46,7 +46,7 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
 
   navLinks.push({
     href: '/tna',
-    label: 'AI Based Training Need Analysis',
+    label: 'Ai based  Training Need Analysis',
     isGold: true
   })
 
@@ -109,13 +109,13 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
           </a>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-3 flex-shrink-0 ml-4">
+          <div className="hidden md:flex items-center gap-1.5 lg:gap-3 flex-shrink-0 ml-2 lg:ml-4">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={(e) => handleAnchorClick(e, link.href)}
-                className="text-4 font-semibold underline decoration-1 underline-offset-2 hover:opacity-80 transition-opacity cursor-pointer whitespace-nowrap"
+                className="text-[11px] lg:text-sm font-semibold underline decoration-1 underline-offset-2 hover:opacity-80 transition-opacity cursor-pointer whitespace-nowrap"
                 style={{
                   color: link.isGold ? '#D4A24E' : 'inherit',
                   fontWeight: link.isGold ? 700 : 'inherit'

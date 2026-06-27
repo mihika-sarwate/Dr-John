@@ -1,0 +1,25 @@
+# Tell Jekyll to ignore source files and only serve compiled static assets
+exclude:
+  - app
+  - components
+  - lib
+  - schemas
+  - node_modules
+  - .github
+  - .vscode
+  - .sanity
+  - Website.docx
+  - Website.zip
+  - package.json
+  - package-lock.json
+  - tsconfig.json
+  - next.config.js
+  - tailwind.config.ts
+  - postcss.config.js
+  - sanity.config.ts
+  - next-env.d.ts
+  - build.log
+  - build_output.log
+  - build_utf8.log
+  - debug.log
+  - out

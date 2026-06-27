@@ -153,7 +153,7 @@ export default async function Home() {
         }}>
           Take our comprehensive 261-question psychometric assessment — covering IQ, EQ, MBTI, RIASEC, Big Five, Grit, Ethics and more — and receive your personalised AI-generated career report instantly.
         </p>
-        <a href="/tna" style={{
+        <a href="/career-compass-ai" style={{
           display: "inline-block",
           background: "#D4A24E",
           color: "#0D1025",

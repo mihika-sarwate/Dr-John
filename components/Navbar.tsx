@@ -45,15 +45,9 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
     }))
 
   navLinks.push({
-    href: '/tna',
+    href: '/career-compass-ai',
     label: 'Ai based  Training Need Analysis',
     isGold: true
-  })
-
-  navLinks.push({
-    href: '/career-compass-ai',
-    label: 'AI training',
-    isGold: false
   })
 
 

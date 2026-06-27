@@ -58,7 +58,7 @@ const ptComponents: any = {
               <strong>The student </strong>
               must study{' '}
               <a
-                href="/Dr-John/career-compass-ai"
+                href="/career-compass-ai"
                 className="underline"
                 style={{ color: '#2563EB' }}
               >

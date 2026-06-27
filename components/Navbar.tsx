@@ -45,7 +45,7 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
     }))
 
   navLinks.push({
-    href: '/Dr-John/career-compass-ai',
+    href: '/career-compass-ai',
     label: 'Ai based  Training Need Analysis',
     isGold: true
   })

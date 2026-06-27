@@ -34,6 +34,65 @@ const CAREERS = [
   { id:"product_manager", title:"Product Manager", sector:"Technology", description:"Defines product vision, prioritizes roadmaps, and bridges engineering, design, and business stakeholders.", riasec:{R:20,I:60,A:45,S:60,E:80,C:55}, ocean:{O:70,C:75,E:65,A:60,N:35}, cognitive:80, eq:80, grit:75, integrity:75, adaptability:85, values:["impact","innovation","leadership"], aiResilience:60, resilienceReason:"Stakeholder alignment, prioritization judgment, and cross-functional leadership require human negotiation and vision-setting AI can't replicate.", training:["Product management certification (AIPMM, SVPG frameworks)","Data literacy: SQL, analytics & A/B testing fundamentals","Stakeholder communication, negotiation & leadership skills","Domain expertise in target industry or technology vertical"], examPrep:["AIPMM CPM / PMPO certification exam","Google UX Design / Product Analytics certifications","Case study interviews: product design, estimation, strategy","Technical literacy: system design basics, APIs, agile/scrum"] },
 ];
 
+// ─── DEMOGRAPHIC HELPERS ─────────────────────────────────────────────────────
+// These are used to contextualise matching, gap analysis, and AI narrative
+
+function getAgeGroup(age) {
+  const a = parseInt(age);
+  if (a <= 22) return "student";          // fresh grad / student
+  if (a <= 30) return "earlyCareer";      // early career
+  if (a <= 45) return "midCareer";        // mid career
+  return "seniorCareer";                  // senior / career change
+}
+
+function getExperienceLevel(years) {
+  const y = parseInt(years);
+  if (y === 0) return "fresher";
+  if (y <= 3)  return "junior";
+  if (y <= 10) return "mid";
+  return "senior";
+}
+
+function getSalaryBand(salary) {
+  // salary stored as monthly in INR (or equivalent)
+  const s = parseInt(salary);
+  if (s <= 30000)  return "entry";      // ≤ ₹30k/mo
+  if (s <= 80000)  return "mid";        // ₹30k–80k/mo
+  if (s <= 200000) return "upper";      // ₹80k–2L/mo
+  return "senior";                      // > ₹2L/mo
+}
+
+// Career transition feasibility — penalises careers that need full degrees
+// if person is senior / high salary (unlikely to restart from scratch)
+function transitionFeasibility(career, profile) {
+  const exp = getExperienceLevel(profile.experience);
+  const sal = getSalaryBand(profile.salary);
+  const age = getAgeGroup(profile.age);
+  // Careers that require full undergraduate degree to enter
+  const fullDegreeRequired = ["registered_nurse","physiotherapist","psychologist",
+    "speech_pathologist","midwife","veterinarian","architect","lawyer","diplomat"];
+  if (fullDegreeRequired.includes(career.id) && (age==="seniorCareer" || sal==="senior")) {
+    return 0.75; // penalise — hard pivot, not impossible
+  }
+  // Careers where seniority / experience is a big asset
+  const experienceValued = ["entrepreneur","construction_manager","hr_manager",
+    "financial_advisor","product_manager","marketing_strategist","urban_planner","diplomat"];
+  if (experienceValued.includes(career.id) && (exp==="mid"||exp==="senior")) {
+    return 1.15; // boost — experience accelerates entry
+  }
+  return 1.0;
+}
+
+// City-based salary expectation context for AI narrative
+function getCityContext(city) {
+  const c = (city||"").toLowerCase();
+  if (["mumbai","delhi","bangalore","bengaluru","hyderabad","pune","chennai","gurgaon","noida"].some(x=>c.includes(x)))
+    return { tier:"metro", note:"Being based in a major metro gives you strong access to top employers, global firms, and high-demand roles in this sector." };
+  if (["ahmedabad","kolkata","jaipur","lucknow","chandigarh","kochi","indore","bhopal"].some(x=>c.includes(x)))
+    return { tier:"tier2", note:"Your city has a growing job market — this career has strong demand locally, with remote/hybrid options expanding your reach to metro opportunities." };
+  return { tier:"other", note:"While local opportunities may vary, this career has strong global demand and remote / relocation pathways worth exploring." };
+}
+
 // ─── ASSESSMENT ITEMS ────────────────────────────────────────────────────────
 const COGNITIVE_ITEMS = [
   { id:"c1", text:"Which number comes next: 2, 6, 12, 20, 30, ?", options:["36","40","42","44"], correct:2 },
@@ -285,21 +344,73 @@ function computeAll(aa){ return { cognitive:scoreMCQ(COGNITIVE_ITEMS,aa.cognitiv
 
 // ─── CAREER MATCHING ──────────────────────────────────────────────────────────
 function cosine(a,b){ const k=Object.keys(a); let d=0,ma=0,mb=0; k.forEach(k=>{ d+=a[k]*b[k]; ma+=a[k]**2; mb+=b[k]**2; }); return ma&&mb?d/(Math.sqrt(ma)*Math.sqrt(mb)):0; }
-function matchCareers(sc){ const {riasec,ocean,cognitive,eq,grit,ethics,mindset,values}=sc; const topVals=Object.entries(values).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]); return CAREERS.map(c=>{ const rs=cosine(riasec,c.riasec)*100,os=cosine(ocean,c.ocean)*100; const cg=Math.max(0,100-Math.abs(cognitive-c.cognitive)*1.5); const eq2=Math.max(0,100-Math.abs(eq-c.eq)*1.5); const gr=Math.max(0,100-Math.abs(grit-c.grit)*1.5); const et=Math.max(0,100-Math.abs(ethics-c.integrity)*1.5); const ms=Math.max(0,100-Math.abs(mindset-c.adaptability)*1.5); const vm=c.values.filter(v=>topVals.includes(v)).length/Math.max(c.values.length,1)*100; const match=Math.round(rs*0.25+os*0.20+cg*0.10+eq2*0.15+gr*0.08+et*0.07+ms*0.07+vm*0.08); const fit=Math.round(match*0.7+c.aiResilience*0.3); return {...c,matchScore:match,overallFit:fit,riasecSim:Math.round(rs),oceanSim:Math.round(os),valuesMatch:Math.round(vm)}; }).sort((a,b)=>b.overallFit-a.overallFit).slice(0,10); }
+function matchCareers(sc, profile={}){ 
+  const {riasec,ocean,cognitive,eq,grit,ethics,mindset,values}=sc; 
+  const topVals=Object.entries(values).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]); 
+  return CAREERS.map(c=>{ 
+    const rs=cosine(riasec,c.riasec)*100, os=cosine(ocean,c.ocean)*100; 
+    const cg=Math.max(0,100-Math.abs(cognitive-c.cognitive)*1.5); 
+    const eq2=Math.max(0,100-Math.abs(eq-c.eq)*1.5); 
+    const gr=Math.max(0,100-Math.abs(grit-c.grit)*1.5); 
+    const et=Math.max(0,100-Math.abs(ethics-c.integrity)*1.5); 
+    const ms=Math.max(0,100-Math.abs(mindset-c.adaptability)*1.5); 
+    const vm=c.values.filter(v=>topVals.includes(v)).length/Math.max(c.values.length,1)*100; 
+    const baseMatch=rs*0.25+os*0.20+cg*0.10+eq2*0.15+gr*0.08+et*0.07+ms*0.07+vm*0.08;
+    // Apply demographic feasibility multiplier
+    const feasibility = profile.age ? transitionFeasibility(c, profile) : 1.0;
+    const match=Math.round(Math.min(99, baseMatch * feasibility)); 
+    const fit=Math.round(Math.min(99, match*0.7+c.aiResilience*0.3)); 
+    return {...c,matchScore:match,overallFit:fit,riasecSim:Math.round(rs),oceanSim:Math.round(os),valuesMatch:Math.round(vm)}; 
+  }).sort((a,b)=>b.overallFit-a.overallFit).slice(0,10); 
+}
 
 function getGaps(career,sc){ const g=[]; if(sc.cognitive<career.cognitive-10) g.push({area:"Cognitive / Analytical Thinking",gap:career.cognitive-sc.cognitive,priority:"High"}); if(sc.eq<career.eq-10) g.push({area:"Emotional Intelligence & People Skills",gap:career.eq-sc.eq,priority:"High"}); if(sc.grit<career.grit-10) g.push({area:"Grit & Long-Term Perseverance",gap:career.grit-sc.grit,priority:"Medium"}); if(sc.ethics<career.integrity-10) g.push({area:"Integrity & Ethical Decision-Making",gap:career.integrity-sc.ethics,priority:"High"}); if(sc.mindset<career.adaptability-10) g.push({area:"Growth Mindset & Adaptability",gap:career.adaptability-sc.mindset,priority:"Medium"}); return g; }
 
-// ─── CLAUDE API — AI NARRATIVE GENERATOR ─────────────────────────────────────
-async function generateAINarrative(userName, career, scores, rank, gaps, strengths) {
+// ─── CLAUDE API — FULLY PERSONALISED AI NARRATIVE ────────────────────────────
+async function generateAINarrative(userName, career, scores, rank, gaps, strengths, profile) {
   const topRIASEC = Object.entries(scores.riasec).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k).join("");
   const topMI = Object.entries(scores.mi).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k])=>k).join(" and ");
   const topVals = Object.entries(scores.values).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k.replace(/_/g," ")).join(", ");
-  const prompt = `You are a world-class career counsellor and I-O psychologist writing a personalised Training Need Analysis report for ${userName}.
+  const ageGroup = getAgeGroup(profile.age);
+  const expLevel = getExperienceLevel(profile.experience);
+  const salBand = getSalaryBand(profile.salary);
+  const cityCtx = getCityContext(profile.city);
 
-PSYCHOMETRIC PROFILE:
-- Cognitive IQ Score: ${scores.cognitive}/100
+  // Build life-stage context string
+  const lifeStage = {
+    student:      "As a student or fresh graduate just starting out",
+    earlyCareer:  "As someone in the early stages of your career",
+    midCareer:    "As a mid-career professional with solid experience",
+    seniorCareer: "As a senior professional with deep experience"
+  }[ageGroup];
+
+  const salaryContext = {
+    entry: `Your current salary of ₹${profile.salary}/month is typical for this stage — this career offers strong earnings growth potential.`,
+    mid:   `Your current compensation of ₹${profile.salary}/month shows you've built real market value — this career can take you significantly higher.`,
+    upper: `You're earning ₹${profile.salary}/month, which means you need a career move that protects or grows your lifestyle — this analysis factors that in.`,
+    senior:`At ₹${profile.salary}/month, you're at a senior level — this career recommendation accounts for realistic transition timelines that protect your income.`
+  }[salBand];
+
+  const pronoun = profile.sex?.toLowerCase()==="female" ? "her" : profile.sex?.toLowerCase()==="male" ? "his" : "their";
+  const pronoun2 = profile.sex?.toLowerCase()==="female" ? "she" : profile.sex?.toLowerCase()==="male" ? "he" : "they";
+
+  const prompt = `You are Dr. Colonel JC John, a world-class career counsellor and I-O psychologist at MENTORIA / OverSimplify.in. You are writing a deeply personalised Training Need Analysis (TNA) report for a client.
+
+CLIENT PROFILE:
+- Name: ${userName}
+- Age: ${profile.age} years old
+- Sex: ${profile.sex}
+- Present Designation: ${profile.designation || "Not specified"}
+- Years of Work Experience: ${profile.experience} years
+- Current Monthly Salary: ₹${profile.salary} (or equivalent)
+- City: ${profile.city}
+- Life Stage: ${lifeStage}
+- Career Stage: ${expLevel} level professional
+
+PSYCHOMETRIC SCORES:
+- Cognitive IQ: ${scores.cognitive}/100
 - Emotional Intelligence (EQ): ${scores.eq}/100
-- MBTI Personality Type: ${scores.mbti.type}
+- MBTI Type: ${scores.mbti.type}
 - RIASEC Holland Code (top 3): ${topRIASEC}
 - Big Five OCEAN: Openness ${scores.ocean.O}, Conscientiousness ${scores.ocean.C}, Extraversion ${scores.ocean.E}, Agreeableness ${scores.ocean.A}, Neuroticism ${scores.ocean.N}
 - Grit & Perseverance: ${scores.grit}/100
@@ -309,31 +420,41 @@ PSYCHOMETRIC PROFILE:
 - Top Values: ${topVals}
 - Dominant Intelligences: ${topMI}
 
-RECOMMENDED CAREER: ${career.title} (Rank #${rank} match, ${career.overallFit}% fit score)
+RECOMMENDED CAREER: ${career.title} (Rank #${rank} match — ${career.overallFit}% overall fit)
 SECTOR: ${career.sector}
-AI RESILIENCE SCORE: ${career.aiResilience}/100
+AI DISRUPTION RESILIENCE: ${career.aiResilience}/100
 
-STRENGTHS IDENTIFIED: ${strengths.length > 0 ? strengths.join(", ") : "Profile shows broad developmental potential"}
-DEVELOPMENT GAPS: ${gaps.length > 0 ? gaps.map(g => `${g.area} (${g.priority} priority, gap of ${g.gap} points)`).join("; ") : "No critical gaps identified"}
+STRENGTHS IDENTIFIED: ${strengths.length > 0 ? strengths.join(", ") : "Broad developmental potential across multiple areas"}
+DEVELOPMENT GAPS: ${gaps.length > 0 ? gaps.map(g => `${g.area} (${g.priority} priority, gap: ${g.gap} points)`).join("; ") : "No critical gaps — strong alignment with career requirements"}
 
-Write a personalised, warm, professional TNA narrative for ${userName} in 4 clear paragraphs:
+LOCATION CONTEXT: ${cityCtx.note}
+SALARY CONTEXT: ${salaryContext}
 
-PARAGRAPH 1 — WHY THIS CAREER FITS YOU: Explain in specific, personal terms why ${career.title} is a strong match for ${userName} based on their actual scores. Reference their MBTI type, RIASEC code, and specific trait scores. Be specific and personal, not generic.
+Write a warm, insightful, deeply personalised TNA narrative in exactly 5 paragraphs. Address ${userName} directly ("you", "your") throughout:
 
-PARAGRAPH 2 — YOUR KEY STRENGTHS FOR THIS CAREER: Highlight what ${userName} brings to this career that will give them a natural advantage. Reference actual scores and what those mean in practical terms for day-to-day work in this career.
+PARAGRAPH 1 — WHY THIS CAREER IS RIGHT FOR YOU NOW:
+Explain specifically why ${career.title} is the right career for ${userName} at age ${profile.age} with ${profile.experience} years of experience${profile.designation ? ` as ${profile.designation}` : ""}. Reference their MBTI type (${scores.mbti.type}), their top RIASEC interests (${topRIASEC}), and how their current life stage makes this timing ideal or what needs to happen first.
 
-PARAGRAPH 3 — DEVELOPMENT PRIORITIES (TNA): If there are gaps, frame them as exciting growth opportunities, not deficits. Be specific about what to develop, why it matters for this career, and what the impact of developing it will be. If no gaps, explain how they can further deepen their strengths.
+PARAGRAPH 2 — YOUR NATURAL STRENGTHS FOR THIS CAREER:
+Be specific about what ${userName} already brings to this career. Reference actual scores. Tell them what these numbers mean in real day-to-day terms for someone working in ${career.title}. Make it feel like you see them clearly.
 
-PARAGRAPH 4 — YOUR ROADMAP: Give ${userName} a personalised, motivating 3-step action plan to move toward this career, starting from today. Be practical and specific to their profile.
+PARAGRAPH 3 — YOUR PERSONALISED DEVELOPMENT PLAN (TNA):
+Address the gaps honestly but positively. Given ${userName}'s age (${profile.age}), experience level (${profile.experience} years), and current role${profile.designation ? ` as ${profile.designation}` : ""}, give specific, practical and time-bound development actions — not generic advice. Consider what's realistic given where they are in life.
 
-Write in second person ("you", "your"), be warm and encouraging but honest, and make every sentence specific to ${userName}'s actual scores — not generic career advice. Total: 250-320 words.`;
+PARAGRAPH 4 — SALARY & CAREER TRAJECTORY:
+Discuss realistic earning potential for ${career.title} in ${profile.city} or globally, specifically contextualised against ${userName}'s current salary of ₹${profile.salary}/month. Give a concrete 3–5 year income trajectory and what achieving it requires. Be honest and motivating.
+
+PARAGRAPH 5 — YOUR 90-DAY ACTION PLAN:
+Give ${userName} 3 specific actions to take in the next 90 days, numbered, grounded in their actual profile, experience level, city, and current role. Make each action concrete enough to start tomorrow morning.
+
+Be warm, expert, encouraging but honest. Every sentence should feel written for this specific person — not a template. Total length: 380–450 words.`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "claude-sonnet-4-6",
-      max_tokens: 1000,
+      max_tokens: 1200,
       messages: [{ role: "user", content: prompt }]
     })
   });
@@ -370,6 +491,9 @@ export default function App() {
   const [activeTab,setActiveTab]=useState("ai");
   const [aiNarratives,setAiNarratives]=useState({});
   const [aiLoading,setAiLoading]=useState(false);
+  // ── DEMOGRAPHIC PROFILE ──
+  const [profile,setProfile]=useState({ age:"", sex:"", experience:"", designation:"", salary:"", city:"" });
+  const profileComplete = profile.age && profile.sex && profile.experience && profile.salary && profile.city;
 
   const curMod=MODULES[modIdx];
   const totalItems=MODULES.reduce((a,m)=>a+m.items.length,0);
@@ -379,11 +503,12 @@ export default function App() {
   const curItem=curMod?.items[itmIdx];
   const curAns=curItem?modAns[curItem.id]:undefined;
 
+  function setP(k,v){ setProfile(p=>({...p,[k]:v})); }
   function setAns(v){ setAllAns(p=>({...p,[curMod.key]:{...(p[curMod.key]||{}),[curItem.id]:v}})); }
-  function goNext(){ if(itmIdx<curMod.items.length-1){setItmIdx(i=>i+1);}else if(modIdx<MODULES.length-1){setModIdx(m=>m+1);setItmIdx(0);}else{const sc=computeAll(allAns);const tc=matchCareers(sc);setScores(sc);setTopCareers(tc);setScreen("results");} }
+  function goNext(){ if(itmIdx<curMod.items.length-1){setItmIdx(i=>i+1);}else if(modIdx<MODULES.length-1){setModIdx(m=>m+1);setItmIdx(0);}else{const sc=computeAll(allAns);const tc=matchCareers(sc,profile);setScores(sc);setTopCareers(tc);setScreen("results");} }
   function goPrev(){ if(itmIdx>0)setItmIdx(i=>i-1); else if(modIdx>0){const pm=MODULES[modIdx-1];setModIdx(m=>m-1);setItmIdx(pm.items.length-1);} }
-  function start(){ if(!nameInput.trim())return; setUserName(nameInput.trim());setScreen("test");setModIdx(0);setItmIdx(0);setAllAns({}); }
-  function reset(){ setScreen("intro");setAllAns({});setModIdx(0);setItmIdx(0);setSelCareer(null);setNameInput("");setScores(null);setAiNarratives({});setTopCareers([]); }
+  function start(){ if(!nameInput.trim()||!profileComplete)return; setUserName(nameInput.trim());setScreen("test");setModIdx(0);setItmIdx(0);setAllAns({}); }
+  function reset(){ setScreen("intro");setAllAns({});setModIdx(0);setItmIdx(0);setSelCareer(null);setNameInput("");setScores(null);setAiNarratives({});setTopCareers([]);setProfile({age:"",sex:"",experience:"",designation:"",salary:"",city:""}); }
 
   const loadAINarrative = useCallback(async (career, idx) => {
     if(aiNarratives[career.id]||aiLoading) return;
@@ -397,41 +522,96 @@ export default function App() {
       if(scores.ethics>=career.integrity-5)strengths.push("Integrity & Ethics");
       if(scores.mindset>=career.adaptability-5)strengths.push("Mindset & Adaptability");
       if(scores.conflict>=70)strengths.push("Conflict Management");
-      const narrative=await generateAINarrative(userName,career,scores,idx+1,gaps,strengths);
+      const narrative=await generateAINarrative(userName,career,scores,idx+1,gaps,strengths,profile);
       setAiNarratives(prev=>({...prev,[career.id]:narrative}));
     } catch(e) {
       setAiNarratives(prev=>({...prev,[career.id]:"⚠️ Could not generate AI narrative. Please check your connection and try again."}));
     }
     setAiLoading(false);
-  },[scores,userName,aiNarratives,aiLoading]);
+  },[scores,userName,aiNarratives,aiLoading,profile]);
 
   const getLabels=()=>{ const mt=curMod?.type; return mt==="importance"?IL:mt==="interest"?RL:LL; };
   const isAnswered=curAns!==undefined;
   const isLast=modIdx===MODULES.length-1&&itmIdx===curMod?.items.length-1;
 
   // ── INTRO ──────────────────────────────────────────────────────────────────
+  const inp = {width:"100%",padding:"11px 14px",borderRadius:9,border:"2px solid #2D3478",background:"#0D1025",color:"#F7F5F0",fontSize:14,outline:"none",boxSizing:"border-box"};
+  const lbl = {color:"#8A8FAF",fontSize:12,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.8px",display:"block",marginBottom:5};
   if(screen==="intro") return (
-    <div style={{...BG,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-      <div style={{maxWidth:600,width:"100%"}}>
-        <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{fontSize:52,marginBottom:10}}>🧭</div>
-          <h1 style={{fontSize:30,fontWeight:800,color:"#F7F5F0",margin:"0 0 4px",letterSpacing:"-0.5px"}}>CareerCompass<span style={{color:"#D4A24E"}}>™</span></h1>
-          <p style={{color:"#D4A24E",fontSize:13,margin:"0 0 2px",fontWeight:600}}>by OverSimplify.in</p>
-          <div style={{display:"inline-block",background:"#D4A24E22",border:"1px solid #D4A24E44",borderRadius:20,padding:"4px 14px",margin:"8px 0"}}>
-            <span style={{color:"#D4A24E",fontSize:12,fontWeight:700}}>✨ Now with AI-Powered Personalised TNA Reports</span>
+    <div style={{...BG,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{maxWidth:580,width:"100%"}}>
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:48,marginBottom:8}}>🧭</div>
+          <h1 style={{fontSize:28,fontWeight:800,color:"#F7F5F0",margin:"0 0 4px",letterSpacing:"-0.5px"}}>CareerCompass<span style={{color:"#D4A24E"}}>™</span></h1>
+          <p style={{color:"#D4A24E",fontSize:13,margin:"0 0 2px",fontWeight:600}}>by OverSimplify.in · MENTORIA</p>
+          <div style={{display:"inline-block",background:"#D4A24E22",border:"1px solid #D4A24E44",borderRadius:20,padding:"3px 12px",margin:"6px 0"}}>
+            <span style={{color:"#D4A24E",fontSize:11,fontWeight:700}}>✨ AI-Powered · Fully Personalised · Claude AI Reports</span>
           </div>
-          <p style={{color:"#8A8FAF",fontSize:13,marginTop:8}}>Comprehensive Psychometric Assessment · AI-Resilient Career Matching · Claude AI Narrative Reports</p>
         </div>
-        <div style={{background:"#12153A",borderRadius:14,padding:18,marginBottom:14}}>
-          <p style={{color:"#D4A24E",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,margin:"0 0 12px"}}>11 Assessment Modules</p>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{MODULES.map(m=>(<div key={m.key} style={{display:"flex",alignItems:"center",gap:8,color:"#C5C8E0",fontSize:13}}><span>{m.icon}</span><span>{m.label.split("—")[0].split("(")[0].trim()}</span></div>))}</div>
+
+        {/* Profile Form Card */}
+        <div style={{background:"#12153A",borderRadius:16,padding:22,marginBottom:14,border:"1px solid #2D3478"}}>
+          <p style={{color:"#D4A24E",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,margin:"0 0 16px"}}>👤 Your Profile — Required for Personalised Report</p>
+
+          {/* Name */}
+          <div style={{marginBottom:14}}>
+            <label style={lbl}>Full Name *</label>
+            <input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="e.g. Priya Sharma" style={inp}/>
+          </div>
+
+          {/* Age + Sex row */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+            <div>
+              <label style={lbl}>Age *</label>
+              <input type="number" min="15" max="70" value={profile.age} onChange={e=>setP("age",e.target.value)} placeholder="e.g. 28" style={inp}/>
+            </div>
+            <div>
+              <label style={lbl}>Sex *</label>
+              <select value={profile.sex} onChange={e=>setP("sex",e.target.value)} style={{...inp,appearance:"none"}}>
+                <option value="">Select...</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Prefer not to say</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Experience + Designation row */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+            <div>
+              <label style={lbl}>Years of Work Experience *</label>
+              <input type="number" min="0" max="50" value={profile.experience} onChange={e=>setP("experience",e.target.value)} placeholder="e.g. 5" style={inp}/>
+            </div>
+            <div>
+              <label style={lbl}>Present Designation</label>
+              <input value={profile.designation} onChange={e=>setP("designation",e.target.value)} placeholder="e.g. Senior Manager" style={inp}/>
+            </div>
+          </div>
+
+          {/* Salary + City row */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:6}}>
+            <div>
+              <label style={lbl}>Present Monthly Salary (₹) *</label>
+              <input type="number" min="0" value={profile.salary} onChange={e=>setP("salary",e.target.value)} placeholder="e.g. 75000" style={inp}/>
+              <p style={{color:"#5A5F7F",fontSize:10,margin:"3px 0 0"}}>Enter 0 if student / not working</p>
+            </div>
+            <div>
+              <label style={lbl}>City *</label>
+              <input value={profile.city} onChange={e=>setP("city",e.target.value)} placeholder="e.g. Bangalore" style={inp}/>
+            </div>
+          </div>
         </div>
-        <div style={{background:"#12153A",borderRadius:14,padding:14,marginBottom:18,display:"flex",gap:14,flexWrap:"wrap",justifyContent:"center"}}>
-          {[["📋",`${totalItems} Questions`],["⏱","45–60 Min"],["🏆","Top 10 Careers"],["🤖","AI TNA Report"],["📝","Exam Prep"],["🔒","100% Private"]].map(([icon,label])=>(<div key={label} style={{textAlign:"center",minWidth:80}}><div style={{fontSize:20}}>{icon}</div><div style={{color:"#8A8FAF",fontSize:11,marginTop:2}}>{label}</div></div>))}
+
+        {/* Stats strip */}
+        <div style={{background:"#12153A",borderRadius:12,padding:12,marginBottom:14,display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center"}}>
+          {[["📋",`${totalItems} Questions`],["⏱","45–60 Min"],["🏆","Top 10 Careers"],["🤖","AI TNA Report"],["📝","Exam Prep"],["🔒","100% Private"]].map(([icon,label])=>(<div key={label} style={{textAlign:"center",minWidth:70}}><div style={{fontSize:18}}>{icon}</div><div style={{color:"#8A8FAF",fontSize:10,marginTop:1}}>{label}</div></div>))}
         </div>
-        <input value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&start()} placeholder="Enter your full name to begin..." style={{width:"100%",padding:"13px 16px",borderRadius:10,border:"2px solid #2D3478",background:"#12153A",color:"#F7F5F0",fontSize:15,outline:"none",boxSizing:"border-box",marginBottom:10}}/>
-        <button onClick={start} disabled={!nameInput.trim()} style={{width:"100%",padding:14,borderRadius:10,border:"none",background:nameInput.trim()?"#D4A24E":"#2D3478",color:nameInput.trim()?"#0D1025":"#5A5F7F",fontSize:16,fontWeight:800,cursor:nameInput.trim()?"pointer":"not-allowed",transition:"all .2s"}}>Begin Assessment →</button>
-        <p style={{color:"#5A5F7F",fontSize:11,textAlign:"center",marginTop:10}}>No data stored or uploaded. All processing is local to your browser. AI reports use Anthropic's Claude API.</p>
+
+        <button onClick={start} disabled={!nameInput.trim()||!profileComplete} style={{width:"100%",padding:14,borderRadius:10,border:"none",background:(nameInput.trim()&&profileComplete)?"#D4A24E":"#2D3478",color:(nameInput.trim()&&profileComplete)?"#0D1025":"#5A5F7F",fontSize:16,fontWeight:800,cursor:(nameInput.trim()&&profileComplete)?"pointer":"not-allowed",transition:"all .2s",marginBottom:8}}>
+          {(!nameInput.trim()||!profileComplete) ? "Complete all required fields (*) to begin" : `Begin Assessment, ${nameInput.split(" ")[0]} →`}
+        </button>
+        <p style={{color:"#5A5F7F",fontSize:10,textAlign:"center",margin:0}}>Your profile data is used only to personalise your report. Nothing is stored or uploaded.</p>
       </div>
     </div>
   );
@@ -593,15 +773,22 @@ export default function App() {
     }
 
     // ── RESULTS OVERVIEW ─────────────────────────────────────────────────────
+    const cityCtx = getCityContext(profile.city);
     return (
       <div style={{...BG}}>
-        <div style={{background:"linear-gradient(135deg,#12153A,#1B1F3B)",padding:"28px 20px",textAlign:"center",borderBottom:"1px solid #2D3478"}}>
-          <div style={{fontSize:40,marginBottom:6}}>🧭</div>
-          <h1 style={{fontSize:24,fontWeight:800,color:"#F7F5F0",margin:"0 0 4px"}}>CareerCompass™ Report</h1>
+        <div style={{background:"linear-gradient(135deg,#12153A,#1B1F3B)",padding:"24px 20px",textAlign:"center",borderBottom:"1px solid #2D3478"}}>
+          <div style={{fontSize:36,marginBottom:6}}>🧭</div>
+          <h1 style={{fontSize:22,fontWeight:800,color:"#F7F5F0",margin:"0 0 4px"}}>CareerCompass™ Report</h1>
           <p style={{color:"#D4A24E",fontSize:16,fontWeight:700,margin:"0 0 2px"}}>{userName}</p>
-          <p style={{color:"#8A8FAF",fontSize:12,margin:0}}>{new Date().toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}</p>
-          <div style={{display:"inline-block",background:"#D4A24E22",border:"1px solid #D4A24E44",borderRadius:20,padding:"4px 14px",marginTop:10}}>
-            <span style={{color:"#D4A24E",fontSize:12,fontWeight:700}}>✨ Tap any career for your AI-generated personalised report</span>
+          <p style={{color:"#8A8FAF",fontSize:12,margin:"0 0 8px"}}>{new Date().toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}</p>
+          {/* Demographic strip */}
+          <div style={{display:"flex",justifyContent:"center",gap:6,flexWrap:"wrap",marginTop:8}}>
+            {[`🎂 Age ${profile.age}`,`${profile.sex==="Female"?"👩":"👨"} ${profile.sex}`,`💼 ${profile.experience}yr exp`,profile.designation&&`🏷️ ${profile.designation}`,`💰 ₹${Number(profile.salary).toLocaleString("en-IN")}/mo`,`📍 ${profile.city}`].filter(Boolean).map(tag=>(
+              <span key={tag} style={{background:"#1E2240",borderRadius:20,padding:"3px 10px",fontSize:11,color:"#C5C8E0"}}>{tag}</span>
+            ))}
+          </div>
+          <div style={{display:"inline-block",background:"#D4A24E22",border:"1px solid #D4A24E44",borderRadius:20,padding:"3px 12px",marginTop:10}}>
+            <span style={{color:"#D4A24E",fontSize:11,fontWeight:700}}>✨ Tap any career for your AI-generated personalised report</span>
           </div>
         </div>
 
@@ -618,6 +805,12 @@ export default function App() {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
             <div style={{background:"#12153A",borderRadius:14,padding:14,textAlign:"center"}}><p style={{color:"#D4A24E",fontSize:11,fontWeight:700,textTransform:"uppercase",margin:"0 0 8px"}}>OCEAN Profile</p><RadarChart data={oceanData} size={180}/></div>
             <div style={{background:"#12153A",borderRadius:14,padding:14,textAlign:"center"}}><p style={{color:"#D4A24E",fontSize:11,fontWeight:700,textTransform:"uppercase",margin:"0 0 8px"}}>RIASEC Profile</p><RadarChart data={scores.riasec} size={180}/></div>
+          </div>
+
+          {/* City + life stage insight */}
+          <div style={{background:"#12153A",borderRadius:12,padding:14,marginBottom:14,borderLeft:"3px solid #4A6FA5"}}>
+            <p style={{color:"#4A6FA5",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,margin:"0 0 4px"}}>📍 Location & Life-Stage Context</p>
+            <p style={{color:"#C5C8E0",fontSize:13,lineHeight:1.6,margin:0}}>{cityCtx.note} Your recommendations have been calibrated for someone with <strong style={{color:"#F7F5F0"}}>{profile.experience} years of experience</strong> at <strong style={{color:"#F7F5F0"}}>₹{Number(profile.salary).toLocaleString("en-IN")}/month</strong> — career transition feasibility is factored into each match score.</p>
           </div>
 
           {/* Top 10 */}

@@ -58,9 +58,7 @@ const ptComponents: any = {
               <strong>The student </strong>
               must study{' '}
               <a
-                href="https://oversimplify.in"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/career-compass-ai"
                 className="underline"
                 style={{ color: '#2563EB' }}
               >

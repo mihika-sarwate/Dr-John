@@ -33,7 +33,7 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
     setNavigation(initialNavigation)
   }, [initialNavigation])
 
-  if (pathname === '/tna') return null
+  if (pathname === '/tna' || pathname === '/career-compass-ai') return null
 
   const navLinks = (navigation?.menuItems || [])
     .filter((item) => item.isVisible !== false)
@@ -48,6 +48,12 @@ export default function Navbar({ navigation: initialNavigation }: { navigation?:
     href: '/tna',
     label: 'Ai based  Training Need Analysis',
     isGold: true
+  })
+
+  navLinks.push({
+    href: '/career-compass-ai',
+    label: 'AI training',
+    isGold: false
   })
 
 

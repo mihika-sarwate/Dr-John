@@ -1,6 +1,6 @@
 1:"$Sreact.fragment"
-2:I[51746,["/_next/static/chunks/35113d1128e18bfc.js","/_next/static/chunks/fb0d8610a57f0a74.js"],"ViewportBoundary"]
-3:I[51746,["/_next/static/chunks/35113d1128e18bfc.js","/_next/static/chunks/fb0d8610a57f0a74.js"],"MetadataBoundary"]
+2:I[51746,["/_next/static/chunks/1cbd5d8d6874caf7.js","/_next/static/chunks/fb0d8610a57f0a74.js"],"ViewportBoundary"]
+3:I[51746,["/_next/static/chunks/1cbd5d8d6874caf7.js","/_next/static/chunks/fb0d8610a57f0a74.js"],"MetadataBoundary"]
 4:"$Sreact.suspense"
-5:I[97186,["/_next/static/chunks/35113d1128e18bfc.js","/_next/static/chunks/fb0d8610a57f0a74.js"],"IconMark"]
-0:{"buildId":"ufM5lf9BU_0OcI2KIr9NW","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"MENTORIA - Career Guidance"}],["$","meta","1",{"name":"description","content":"Career guidance platform"}],["$","link","2",{"rel":"icon","href":"/favicon.ico"}],["$","$L5","3",{}]]}]}]}],null]}],"loading":null,"isPartial":false}
+5:I[97186,["/_next/static/chunks/1cbd5d8d6874caf7.js","/_next/static/chunks/fb0d8610a57f0a74.js"],"IconMark"]
+0:{"buildId":"OQcWXiWKd0EIWmLnEQ9Mv","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"MENTORIA - Career Guidance"}],["$","meta","1",{"name":"description","content":"Career guidance platform"}],["$","link","2",{"rel":"icon","href":"/favicon.ico"}],["$","$L5","3",{}]]}]}]}],null]}],"loading":null,"isPartial":false}

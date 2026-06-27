@@ -3,7 +3,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 
 const nextConfig = {
   output: 'export',
-  basePath: '',
+  basePath: '/Dr-John',
   images: {
     unoptimized: true,
     remotePatterns: [

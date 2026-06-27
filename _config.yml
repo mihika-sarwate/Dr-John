@@ -1,4 +1,5 @@
 # Tell Jekyll to ignore source files and only serve compiled static assets
+theme: null
 exclude:
   - app
   - components
